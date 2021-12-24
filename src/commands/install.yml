@@ -1,0 +1,17 @@
+description: |
+  Install Tailscale in a CircleCI job. This step uses Tailscale's shell
+  installer script which doesn't currently allow choosing a version. Only the
+  latest version is supported.
+steps:
+  - run:
+      name: "Check Requirements"
+      command: |
+        if ! command -v curl >/dev/null 2>&1; then
+          echo "Error: curl is not installed." && exit 1
+        fi
+  - run:
+      name: "Install Tailscale"
+      command: curl -fsSL https://tailscale.com/install.sh | sh
+  - run:
+      name: "Check Tailscale"
+      command: tailscale --version

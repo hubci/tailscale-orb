@@ -1,0 +1,9 @@
+version: 2.1
+
+description: |
+  A CircleCI orb to connect to a Tailscale Network. This orb supports Docker
+  images as well as Linux machine images. amd64 and arm64.
+
+display:
+  home_url: "https://github.com/hubci/tailscale-orb"
+  source_url: "https://github.com/hubci/tailscale-orb"

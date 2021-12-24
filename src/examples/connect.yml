@@ -1,0 +1,15 @@
+description: Here's how you would use the Tailscale Orb.
+usage:
+  version: "2.1"
+  orbs:
+    ts: hubci/tailscale@0.1
+  jobs:
+    build:
+      docker:
+        - image: cimg/base:current
+      steps:
+        - ts/install
+        - ts/connect
+        - run:
+            name: "Ping an example Tailscale machine"
+            command: tailscale --socket=/tmp/tailscaled.sock ping 100.101.102.103

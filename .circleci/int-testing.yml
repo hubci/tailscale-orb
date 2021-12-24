@@ -1,0 +1,61 @@
+version: 2.1
+
+filters: &filters
+  tags:
+    only: /.*/
+
+orbs:
+  orb-tools: circleci/orb-tools@11.6
+  orb: hubci/tailscale@dev:<< pipeline.git.revision >>
+  sphere: hubci/sphere@0.2
+
+executors:
+  cimg:
+    docker:
+      - image: cimg/base:current
+  ubuntu:
+    docker:
+      - image: ubuntu:22.04
+  debian:
+    docker:
+      - image: debian:12
+  linux-vm:
+    machine:
+      image: ubuntu-2204:current
+
+workflows:
+  int-testing-wf:
+    jobs:
+      - test-install:
+          matrix:
+            parameters:
+              exec:
+                - cimg
+                - ubuntu
+                - debian
+                - linux-vm
+      - orb-tools/pack:
+          filters: *filters
+      - orb-tools/publish:
+          orb-name: hubci/tailscale
+          vcs-type: << pipeline.project.type >>
+          pub-type: production
+          requires:
+            - orb-tools/pack
+          context: circleci-ctx
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+$/
+
+jobs:
+  test-install:
+    parameters:
+      exec:
+        type: executor
+    executor: << parameters.exec >>
+    steps:
+      - sphere/init
+      - run: $SUDO apt-get update && $SUDO apt-get install -y curl
+      - orb/install
