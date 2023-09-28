@@ -1,0 +1,54 @@
+description: |
+  Connect to the Tailscale Network using userspace networking. This mode is
+  typically used when runing Tailscale in a container. This is because the
+  normal networking changes Tailscale needs to make won't work in a container.
+  When using tailscale commands yourself, the flag 
+  --socket=/tmp/tailscaled.sock should be used.
+parameters:
+  auth-key:
+    description: |
+      The name of an environment variable that contains a Tailscale ephermeral
+      auth key. While this parameter is optional, providing an auth key is not.
+      Don't have a key yet? Tailscale has a doc to set one up that can be found
+      at the following URL: https://tailscale.com/kb/1111/ephemeral-nodes/
+    type: env_var_name
+    default: "TS_AUTHKEY"
+  export-proxies:
+    description: "Whether or not to export the proxy environment variables."
+    type: boolean
+    default: true
+  proxy-address:
+    type: string
+    default: "localhost"
+steps:
+  - run:
+      name: "Check Tailscale Requirements"
+      command: |
+        if ! command -v tailscale --version >/dev/null 2>&1; then
+          echo "Error: Tailscale is not installed. You can install it using this orb's `install` command or via some other option." && exit 1
+        fi
+
+        if [[ -z "${<< parameters.auth-key >>}" ]]; then
+          echo "Error: The environment variable '<< parameters.auth-key >>' needs to be set." && exit 1
+        fi
+  - run:
+      name: "Start Tailscale"
+      background: true
+      command: |
+        tailscaled --tun=userspace-networking --socket=/tmp/tailscaled.sock --socks5-server=<< parameters.proxy-address >>:1055 --outbound-http-proxy-listen=<< parameters.proxy-address >>:1055
+  - run:
+      name: "Tailscale Up"
+      command: |
+        HOSTNAME="circleci-$(cat /etc/hostname)"
+        tailscale --socket=/tmp/tailscaled.sock up --authkey ${<< parameters.auth-key >>} --hostname=${HOSTNAME} --accept-routes --timeout=10s
+  - when:
+      condition: << parameters.export-proxies >>
+      steps:
+        - run:
+            name: "Export Tailscale Proxy Envars"
+            command: |
+              echo "export ALL_PROXY=socks5://<< parameters.proxy-address >>:1055/" >> $BASH_ENV
+              echo "export HTTP_PROXY=http://<< parameters.proxy-address >>:1055/" >> $BASH_ENV
+              echo "export HTTPS_PROXY=http://<< parameters.proxy-address >>:1055/" >> $BASH_ENV
+              echo "export http_proxy=http://<< parameters.proxy-address >>:1055/" >> $BASH_ENV
+              echo "export https_proxy=http://<< parameters.proxy-address >>:1055/" >> $BASH_ENV
