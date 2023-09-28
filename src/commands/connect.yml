@@ -25,4 +25,4 @@ steps:
       name: "Tailscale Up"
       command: |
         HOSTNAME="circleci-$(cat /etc/hostname)"
-        tailscale up --authkey ${<< parameters.auth-key >>} --hostname=${HOSTNAME} --accept-routes --timeout=10s
+        sudo tailscale up --authkey ${<< parameters.auth-key >>} --hostname=${HOSTNAME} --accept-routes --timeout=10s
